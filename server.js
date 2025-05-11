@@ -1,6 +1,5 @@
-Here is the full code for the `server.js` file:
 
-```javascript
+
 const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
