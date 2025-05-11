@@ -8,8 +8,10 @@ import json
 import argparse
 import os
 import csv
+import time  # Added the missing import for time
 from datetime import datetime
 
+# Constants
 SENSOR_READ_INTERVAL = 60
 CSV_FILE_PATH = "data/sensor_readings.csv"
 RETRAIN_INTERVAL = 10
@@ -106,27 +108,31 @@ def train_model(df):
     return model, scaler, features, confidence
 
 def predict_from_input(file_path, model, scaler, features, training_df):
-    df = pd.read_csv(file_path)
-    df['timestamp'] = pd.to_datetime(df['created_at'])
-    df = df.rename(columns={'field1': 'temperature', 'field2': 'humidity'})
-    
-    # Add engineered features
-    df['hour'] = df['timestamp'].dt.hour
-    df['day'] = df['timestamp'].dt.day
-    last_gas = training_df['gas'].iloc[-1] if not training_df.empty else 0
-    df['gas_lag1'] = last_gas
-    df['gas_rolling_mean'] = training_df['gas'].rolling(window=3, min_periods=1).mean().iloc[-1] if not training_df.empty else last_gas
+    try:
+        df = pd.read_csv(file_path)
+        df['timestamp'] = pd.to_datetime(df['created_at'])
+        df = df.rename(columns={'field1': 'temperature', 'field2': 'humidity'})
+        
+        # Add engineered features
+        df['hour'] = df['timestamp'].dt.hour
+        df['day'] = df['timestamp'].dt.day
+        last_gas = training_df['gas'].iloc[-1] if not training_df.empty else 0
+        df['gas_lag1'] = last_gas
+        df['gas_rolling_mean'] = training_df['gas'].rolling(window=3, min_periods=1).mean().iloc[-1] if not training_df.empty else last_gas
 
-    X_input = scaler.transform([[df.iloc[-1][f] for f in features]])
-    pred_gas = float(model.predict(X_input)[0])
-    pred_gas = np.clip(pred_gas, 0, 1000)
-    gas_type = detect_gas_type(pred_gas)
-    return {
-        'gas_level': pred_gas,
-        'gas_type': gas_type,
-        'air_quality': 'Good' if pred_gas < 20 else 'Poor',
-        'confidence': 0.85  # Placeholder, use model confidence if available
-    }
+        X_input = scaler.transform([[df.iloc[-1][f] for f in features]])
+        pred_gas = float(model.predict(X_input)[0])
+        pred_gas = np.clip(pred_gas, 0, 1000)
+        gas_type = detect_gas_type(pred_gas)
+        return {
+            'gas_level': pred_gas,
+            'gas_type': gas_type,
+            'air_quality': 'Good' if pred_gas < 20 else 'Poor',
+            'confidence': 0.85  # Placeholder, use model confidence if available
+        }
+    except Exception as e:
+        print(f"Error during prediction: {e}")
+        return {'error': 'Prediction failed'}
 
 def continuous_monitoring():
     print("Starting air quality monitoring...")
