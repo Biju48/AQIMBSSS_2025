@@ -1,3 +1,6 @@
+Here is the full code for the `server.js` file:
+
+```javascript
 const express = require('express');
 const axios = require('axios');
 const fs = require('fs');
@@ -217,8 +220,8 @@ async function initialize() {
     } catch (error) {
         console.error('Initialization failed:', error.message);
         process.exit(1);
-Skin
     }
 }
 
 initialize();
+```
